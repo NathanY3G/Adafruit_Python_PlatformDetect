@@ -177,7 +177,7 @@ class Board:
         elif chip_id == chips.RK3568:
             board_id = self._rk3568_id()
         elif chip_id == chips.RK3588:
-            board_id = self._rock_pi_id() or self._armbian_id()
+            board_id = self._rock_pi_id() or self._orange_pi_id() or self._armbian_id()
         elif chip_id == chips.RYZEN_V1605B:
             board_id = self._udoo_id()
         elif chip_id == chips.PENTIUM_N3710:
@@ -342,7 +342,7 @@ class Board:
 
     # pylint: disable=too-many-return-statements
     def _armbian_id(self) -> Optional[str]:
-        """Check whether the current board is an OrangePi board."""
+        """Get the current board via the ARMBIAN release field."""
         board_value = self.detector.get_armbian_release_field("BOARD")
         board = None
 
@@ -380,8 +380,12 @@ class Board:
             board = boards.BANANA_PI_M2_ZERO
         elif board_value == "bananapim2plus":
             board = boards.BANANA_PI_M2_PLUS
+        elif board_value == "bananapim2berry":
+            board = boards.BANANA_PI_M2_BERRY
         elif board_value == "bananapim5":
             board = boards.BANANA_PI_M5
+        elif board_value == "bananapipro":
+            board = boards.LEMAKER_BANANA_PRO
         elif board_value == "orangepizeroplus2-h5":
             board = boards.ORANGE_PI_ZERO_PLUS_2H5
         elif board_value == "orangepizeroplus":
@@ -410,6 +414,12 @@ class Board:
         board_value = self.detector.get_device_model()
         if "OrangePi 4" in board_value:
             return boards.ORANGE_PI_4
+        return None
+
+    def _orange_pi_id(self) -> Optional[str]:
+        board_value = self.detector.get_device_model()
+        if "Orange Pi 5" in board_value:
+            return boards.ORANGE_PI_5
         return None
 
     def _sama5_id(self) -> Optional[str]:
@@ -646,6 +656,10 @@ class Board:
             return board
         board_value = board_value.lower()
         chip_id = self.detector.chip.id
+
+        if "banana pi m2 berry" in board_value:
+            board = boards.BANANA_PI_M2_BERRY
+
         if "nanopi" in board_value:
             if "neo" in board_value and "SUN8I" in chip_id:
                 board = boards.NANOPI_NEO_AIR
@@ -695,6 +709,9 @@ class Board:
                 # Feather RP2040 CAN
                 if product == 0x8130:
                     return boards.FEATHER_CAN_U2IF
+                # KB2040 Kee Board
+                if product == 0x0105:
+                    return boards.KB2040_U2IF
         # Will only reach here if a device was added in chip.py but here.
         raise RuntimeError("RP2040_U2IF device was added to chip but not board.")
 
@@ -846,6 +863,11 @@ class Board:
         return self.id in boards._BANANA_PI_IDS
 
     @property
+    def any_lemaker(self) -> bool:
+        """Check whether the current board is any LeMaker board."""
+        return self.id in boards._LEMAKER_IDS
+
+    @property
     def any_maaxboard(self) -> bool:
         """Check whether the current board is any BananaPi-family system."""
         return self.id in boards._MAAXBOARD_IDS
@@ -889,6 +911,7 @@ class Board:
             yield self.board.MACROPAD_U2IF
             yield self.board.QTPY_U2IF
             yield self.board.QT2040_TRINKEY_U2IF
+            yield self.board.KB2040_U2IF
 
         return any(condition for condition in lazily_generate_conditions())
 
@@ -921,6 +944,7 @@ class Board:
             yield self.any_stm32mp1
             yield self.any_lubancat
             yield self.any_bananapi
+            yield self.any_lemaker
             yield self.any_maaxboard
             yield self.any_tisk_board
             yield self.any_siemens_simatic_iot2000
@@ -996,6 +1020,11 @@ class Board:
     def qt2040_trinkey_u2if(self) -> bool:
         """Check whether the current board is a QT Py w/ u2if."""
         return self.id == boards.QT2040_TRINKEY_U2IF
+
+    @property
+    def kb2040_u2if(self) -> bool:
+        """Check whether the current board is a KB2040 w/ u2if."""
+        return self.id == boards.KB2040_U2IF
 
     @property
     def binho_nova(self) -> bool:
